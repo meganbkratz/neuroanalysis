@@ -2,7 +2,116 @@ from collections import OrderedDict
 from neuroanalysis.data.pair import Pair
 import os, re, json
 
+
 class Experiment(object):
+
+    def __init__(self, loader=None):
+
+        self._loader = loader
+
+        self._electrodes = None
+        self._cells = None
+        self._pairs = None
+        self._files = None
+        self._data = None
+        self._uid = None
+        self._files = None
+
+        ## these are maybe acq4-centric?
+        self._site_info = None
+        self._slice_info = None
+        self._expt_info = None
+
+    @property
+    def loader(self):
+        if self._loader is None:
+            raise Exception("No loader was specified on initialization.")
+        return self._loader
+
+    @property
+    def electrodes(self):
+        if self._electrodes is None:
+            self.load()
+        return self._electrodes
+
+    @property
+    def cells(self):
+        if self._cells is None:
+            self.load()
+        return self._cells
+
+    @property
+    def pairs(self):
+        if self._pairs is None:
+            self.load()
+            # self._pairs = OrderedDict()
+            # for preCell in self.cells.values():
+            #     for postCell in self.cells.values():
+            #         if preCell is postCell:
+            #             continue
+            #         if preCell.has_stimulation and postCell.has_readout:
+            #             pair = Pair(preCell, postCell)
+            #             self._pairs[(preCell.cell_id, postCell.cell_id)] = pair
+        return self._pairs
+
+    @property
+    def data(self):
+        """Return a Dataset object for data in this experiment."""
+        if self._data is None:
+            self._data = self.loader.get_ephys_data(self.files)
+        return self._data
+
+    def load(self):
+        """Populate electrodes, cells and pairs."""
+        self._electrodes, self._cells, self._pairs = self.loader.load()
+
+    @property
+    def site_info(self):
+        if self._site_info is None:
+            self._site_info = self.loader.get_site_info()
+        return self._site_info
+
+    @property
+    def slice_info(self):
+        if self._slice_info is None:
+            self._slice_info = self.loader.get_slice_info()
+        return self._slice_info
+
+    @property
+    def expt_info(self):
+        if self._expt_info is None:
+            self._expt_info = self.loader.get_expt_info()
+        return self._expt_info
+
+    @property
+    def files(self):
+        """Return a dictionary of {name: path} for files in this experiment."""
+        if self._files is None:
+            self._files = self.loader.find_files()
+        return self._files
+
+class OptoExperiment(Experiment):
+
+    def __init__(self, loader=None, meta_info=None):
+        Experiment.__init__(loader=loader)
+
+        self._meta_info = meta_info
+
+    def load(self):
+        self._electrodes, self._cells, self._pairs = self.loader.load(meta_info=meta_info)
+
+    @property
+    def site_path(self):
+        return self.loader.get_site_path()
+
+
+
+
+
+
+
+
+class OldExperiment(object):
     """Base class defining the structure of an experiment.
 
     Is initalized with a filepath to a file that contains information to be 
