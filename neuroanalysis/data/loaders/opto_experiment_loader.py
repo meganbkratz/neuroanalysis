@@ -1,26 +1,110 @@
 from .loaders import ExperimentLoader
-from .acq4_experiment_loader import Acq4ExperimentLoader
 from .mies_dataset_loader import MiesNwbLoader
 from neuroanalysis.data.cell import Cell
 from neuroanalysis.data.electrode import Electrode
 from neuroanalysis.data.dataset import Dataset
 
-class OptoExperimentLoader(ExperimentLoader):
-    
-    def __init__(self, cnx_file=None, site_path=None):
-        ExperimentLoader.__init__(self)
 
-        if (cnx_file is not None) and (site_path is not None):
-            raise Exception('Please specify cnx_file OR site_path, not both.')
-        elif (cnx_file is None) and (site_path is None):
-            raise Exception('Please specify either a cnx_file or a site_path.')
+class AI_ExperimentLoader(ExperimentLoader):
+
+    def __init__(self, site_path=None, load_file=None):
+        ExperimentLoader.__init__(self)
+        if (load_file is not None) and (site_path is not None):
+            raise Exception('Please specify either load_file OR site_path, not both.')
+        elif (file_path is None) and (site_path is None):
+            raise Exception('Please specify either a load_file or a site_path.')
 
         self.site_path = site_path
+
+    def find_files(self):
+        files = {
+            'path' = self.site_path
+            'ephys' = self.get_ephys_file(),
+            'multipatch_log' = self.get_multipatch_log()
+        }
+        return files
+
+    def get_timestamp(self):
+        info = self.get_site_info()
+        if info is not None:
+            return info.get('__timestamp__')
+            
+    def get_info(self, meta_info=None):
+        info['meta_info'] = meta_info
+        if self.site_path is not None:
+            info['day_info']=self.get_expt_info()
+            info['slice_info']=self.get_slice_info()
+            info['site_info']=self.get_site_info()
+        return info
+
+    ### private:
+
+    def get_site_info(self):
+        if self.site_path is None:
+            return
+        index = os.path.join(self.site_path, '.index')
+        if not os.path.isfile(index):
+           return 
+        return configfile.readConfigFile(index)['.']
+
+    def get_slice_info(self):
+        if self.site_path is None:
+            return
+        index = os.path.join(self.site_path, '..', '.index')
+        if not os.path.isfile(index):
+           return 
+        return configfile.readConfigFile(index)['.']
+
+    def get_expt_info(self):
+        if self.site_path is None:
+            return
+        index = os.path.join(self.site_path,'../..' '.index')
+        if not os.path.isfile(index):
+           return 
+        return configfile.readConfigFile(index)['.']
+
+    def get_multipatch_log(self):
+        files = [p for p in os.listdir(self.site_path) if re.match(r'MultiPatch_\d+.log', p)]
+        if len(files) == 0:
+            raise TypeError("Could not find multipatch log file for %s" % self)
+        if len(files) > 1:
+            raise TypeError("Found multiple multipatch log files for %s" % self)
+        return os.path.join(self.path, files[0])
+
+    def get_ephys_file(self):
+        """Return the name of the nwb file for this experiment."""
+        p = self.site_path
+        files = glob.glob(os.path.join(p, '*.nwb'))
+        if len(files) == 0:
+            files = glob.glob(os.path.join(p, '*.NWB'))
+
+        if len(files) == 0:
+            return None
+        elif len(files) > 1:
+            ephys_file = None
+            # multiple NWB files here; try using the file manifest to resolve.
+            manifest = os.path.join(p, 'file_manifest.yml')
+            if os.path.isfile(manifest):
+                manifest = yaml.load(open(manifest, 'rb'))
+                for f in manifest:
+                    if f['category'] == 'MIES physiology':
+                        ephys_file = os.path.join(os.path.dirname(self.path), f['path'])
+                        break
+            if ephys_file is None:
+                raise Exception("Multiple NWB files found for %s" % self.expt)
+        else:
+            ephys_file = files[0]
+        return ephys_file
+
+
+class OptoExperimentLoader(AI_ExperimentLoader):
+    
+    def __init__(self, cnx_file=None, site_path=None):
+        AI_ExperimentLoader.__init__(self, site_path=site_path, load_file=cnx_file)
+
         self.cnx_file = cnx_file
-        self.expt_info = {} ## store this here because we might need to add metadata from different sources
 
-
-    def load(self, meta_info=None):
+    def load(self, expt, meta_info=None):
         """Return a tuple of (electrodes, cells, pairs), where each element is an 
         OrderedDict of {electrode_id:Electrode}, {cell_id:Cell} or {pair_id:Pair}.
         Parameters
@@ -28,32 +112,19 @@ class OptoExperimentLoader(ExperimentLoader):
         meta_info - an optional dict of meta_info to be attached to electrodes, cells or pairs.
         """
 
-        if self.site_path is not None:
+        if self.cnx_file is None:
             self.cnx_file = self.find_connections_file()
 
         version = self.get_cnx_file_version(self.cnx_file)
 
         if version == 0:
-            electrodes, cells, pairs = self.load_markPoints_connection_file()
+            electrodes, cells, pairs = self.load_markPoints_connection_file(expt)
         else:
-            electrodes, cells, pairs = self.load_mosaiceditor_connection_file()
+            electrodes, cells, pairs = self.load_mosaiceditor_connection_file(expt)
 
         self.process_meta_info(electrodes, cells, meta_info)
 
         return (electrodes, cells, pairs)
-
-    def get_site_info(self):
-        if site_path is not None:
-            return Acq4ExperimentLoader.get_site_info(self.site_path)
-
-    def get_slice_info(self):
-        if site_path is not None:
-            return Acq4ExperimentLoader.get_slice_info(self.site_path)
-
-    def get_expt_info(self):
-        if site_path is not None:
-            self.expt_info.update(Acq4ExperimentLoader.get_expt_info(self.site_path))
-        return self.expt_info
 
     def get_ephys_data(self, files):
         nwb = files.get('ephys')
@@ -62,16 +133,14 @@ class OptoExperimentLoader(ExperimentLoader):
             return Dataset(loader=MiesNwbLoader(nwb))
 
     def find_files(self):
-        files = {
-            'ephys' = self.get_ephys_file(),
-            'cnx' = self.cnx_file if self.cnx_file is not None else self.find_cnx_file(),
-        }
+        files = AI_ExperimentLoader.find_files(self)
+        files['connections'] = self.cnx_file if self.cnx_file is not None else self.find_connections_file()
         return files
 
-    def get_site_path(self):
-        return self.site_path
-
-
+    def get_uid(self):
+        if self.cnx_file is None:
+            self.cnx_file = self.find_connections_file()
+        return os.path.split(self.cnx_file)[1][:-17] ### connections file name minus '_connections.json'
 
 #### private functions:
 
@@ -79,7 +148,6 @@ class OptoExperimentLoader(ExperimentLoader):
         """Process optional meta_info dict that is passed in at the initialization of expt.
         """
         ## Need to load: presynapticCre, presynapticEffector, [class, reporter, layer for each headstage], internal
-        meta_info = expt._meta_info
         if meta_info is None:
             return
 
@@ -120,8 +188,6 @@ class OptoExperimentLoader(ExperimentLoader):
                 cell._cre_type = meta_info.get('presynapticCre', '').lower()
                 self.label_cell(cell, preEffector, positive=True) ## assume all non-patched stimulated cells are positive for preEffector
 
-        self.expt_info['internal_solution'] = meta_info.get('internal', '').lower() 
-
 
     def label_cell(self, cell, preEffector, positive=True):
         """Populate appropriate labels for a cell positive for the preEffector."""
@@ -145,7 +211,7 @@ class OptoExperimentLoader(ExperimentLoader):
                 cell.labels['AF594'] = True
 
 
-    def load_markPoints_connection_file(self):
+    def load_markPoints_connection_file(self, expt):
         with open(self.cnx_file, 'r') as f:
             exp_json = json.load(f)
 
@@ -166,7 +232,7 @@ class OptoExperimentLoader(ExperimentLoader):
             data = exp_json['Headstages'][headstage]
             elec = Electrode(headstage, start_time=None, stop_time=None, device_id=headstage[-1])
             electrodes[headstage] = elec
-            cell = Cell(self.expt, headstage, elec)
+            cell = Cell(expt, headstage, elec)
             elec.cell = cell
             cell.position = (data['x_pos']*1e-6, data['y_pos']*1e-6, data['z_pos']*1e-6) #covert from um to m
             cell.angle = data['angle']
@@ -203,7 +269,7 @@ class OptoExperimentLoader(ExperimentLoader):
         ## create cells for points that were not overlapping
         for point, data in points.items():
             if point not in skip:
-                cell = Cell(self.expt, point, None)
+                cell = Cell(expt, point, None)
                 cell.position = data['pos']
                 cell.has_readout = False
                 cell.has_stimulation = True
@@ -212,10 +278,9 @@ class OptoExperimentLoader(ExperimentLoader):
         pairs = self.create_pairs(cells, exp_json)
 
         return (electrodes, cells, pairs)
-        #self.populate_connection_calls(expt, exp_json)
 
 
-    def load_mosaiceditor_connection_file(self):
+    def load_mosaiceditor_connection_file(self, expt):
         with open(self.cnx_file, 'r') as f:
             exp_json = json.load(f)
 
@@ -223,7 +288,7 @@ class OptoExperimentLoader(ExperimentLoader):
         cells = OrderedDict()
         for name, data in exp_json['StimulationPoints'].items():
             if data['onCell']:
-                cell = Cell(self.expt, name, None)
+                cell = Cell(expt, name, None)
                 cell.position = tuple(data['position'])
                 cell.has_readout = False
                 cell.has_stimulation = True
@@ -241,7 +306,7 @@ class OptoExperimentLoader(ExperimentLoader):
         for name, data in exp_json['Headstages'].items():
             elec = Electrode(name, start_time=None, stop_time=None, device_id=name[-1])
             electrodes[name] = elec
-            cell = Cell(self.expt, name, elec)
+            cell = Cell(expt, name, elec)
             elec.cell = cell
             cell.position = (data['x_pos'], data['y_pos'], data['z_pos'])
             cell.angle = data['angle']
@@ -278,7 +343,6 @@ class OptoExperimentLoader(ExperimentLoader):
                 p._probed = True
             except KeyError:
                 p._probed = False
-                #print("Could not find connection call for Pair %s -> %s in experiment %s" % (p.preCell.cell_id, p.postCell.cell_id, expt.uid))
         return pairs
 
 
@@ -308,33 +372,9 @@ class OptoExperimentLoader(ExperimentLoader):
                 i = mts.index(max(mts))
                 return cnx_file[i]
 
-    def get_cnx_file_version(self, cnx_file):
+    @classmethod
+    def get_cnx_file_version(cnx_file):
         with open(cnx_file, 'r') as f:
             exp_json = json.load(f)
         return exp_json.get('version', 0)
-
-    def get_ephys_file(self):
-        """Return the name of the nwb file for this experiment."""
-        p = self.site_path
-        files = glob.glob(os.path.join(p, '*.nwb'))
-        if len(files) == 0:
-            files = glob.glob(os.path.join(p, '*.NWB'))
-
-        if len(files) == 0:
-            return None
-        elif len(files) > 1:
-            ephys_file = None
-            # multiple NWB files here; try using the file manifest to resolve.
-            manifest = os.path.join(p, 'file_manifest.yml')
-            if os.path.isfile(manifest):
-                manifest = yaml.load(open(manifest, 'rb'))
-                for f in manifest:
-                    if f['category'] == 'MIES physiology':
-                        ephys_file = os.path.join(os.path.dirname(self.path), f['path'])
-                        break
-            if ephys_file is None:
-                raise Exception("Multiple NWB files found for %s" % self.expt)
-        else:
-            ephys_file = files[0]
-        return ephys_file
                     

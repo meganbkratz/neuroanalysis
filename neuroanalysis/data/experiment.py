@@ -5,9 +5,10 @@ import os, re, json
 
 class Experiment(object):
 
-    def __init__(self, loader=None):
+    def __init__(self, loader=None, meta_info=None):
 
         self._loader = loader
+        self._meta_info = meta_info
 
         self._electrodes = None
         self._cells = None
@@ -16,11 +17,8 @@ class Experiment(object):
         self._data = None
         self._uid = None
         self._files = None
-
-        ## these are maybe acq4-centric?
-        self._site_info = None
-        self._slice_info = None
-        self._expt_info = None
+        self._info = None
+        self._timestamp = None
 
     @property
     def loader(self):
@@ -31,19 +29,19 @@ class Experiment(object):
     @property
     def electrodes(self):
         if self._electrodes is None:
-            self.load()
+            self._load()
         return self._electrodes
 
     @property
     def cells(self):
         if self._cells is None:
-            self.load()
+            self._load()
         return self._cells
 
     @property
     def pairs(self):
         if self._pairs is None:
-            self.load()
+            self._load()
             # self._pairs = OrderedDict()
             # for preCell in self.cells.values():
             #     for postCell in self.cells.values():
@@ -61,53 +59,38 @@ class Experiment(object):
             self._data = self.loader.get_ephys_data(self.files)
         return self._data
 
-    def load(self):
+    def _load(self):
         """Populate electrodes, cells and pairs."""
-        self._electrodes, self._cells, self._pairs = self.loader.load()
+        self._electrodes, self._cells, self._pairs = self.loader.load(self, meta_info=self._meta_info)
 
     @property
-    def site_info(self):
-        if self._site_info is None:
-            self._site_info = self.loader.get_site_info()
-        return self._site_info
+    def info(self):
+        """Return a dictionary of meta_info associated with this experiment.
+        There are no limits/requirements for what keys will be present in this dictionary.
+        """
+        if self._info is None:
+            self._info = self.loader.get_expt_info(meta_info=self._meta_info)
+        return self._info
 
     @property
-    def slice_info(self):
-        if self._slice_info is None:
-            self._slice_info = self.loader.get_slice_info()
-        return self._slice_info
-
-    @property
-    def expt_info(self):
-        if self._expt_info is None:
-            self._expt_info = self.loader.get_expt_info()
-        return self._expt_info
+    def timestamp(self):
+        if self._timestamp is None:
+            self._timestamp = self._loader.get_timestamp()
+        return self._timestamp
 
     @property
     def files(self):
-        """Return a dictionary of {name: path} for files in this experiment."""
+        """Return a dictionary of {name: path} for important files in this experiment."""
         if self._files is None:
             self._files = self.loader.find_files()
         return self._files
 
-class OptoExperiment(Experiment):
-
-    def __init__(self, loader=None, meta_info=None):
-        Experiment.__init__(loader=loader)
-
-        self._meta_info = meta_info
-
-    def load(self):
-        self._electrodes, self._cells, self._pairs = self.loader.load(meta_info=meta_info)
-
     @property
-    def site_path(self):
-        return self.loader.get_site_path()
-
-
-
-
-
+    def uid(self):
+        """A unique string that identifies this experiment."""
+        if self._uid is None:
+            self._uid = self.loader.get_uid()
+        return self._uid
 
 
 

@@ -42,37 +42,36 @@ class DatasetLoader():
 class ExperimentLoader():
     """An abstract base class for Experiment loaders."""
 
-    def __init__(self):
-        self._expt = None ### need loader to have access to experiment because the experiment must be handed to Cell objects when they are created.
-
-    def load(self, meta_info=None):
+    def load(self, expt, meta_info=None):
         """Return a tuple of (electrodes, cells, pairs), where each element is an 
         OrderedDict of {electrode_id:Electrode}, {cell_id:Cell} or {pair_id:Pair}.
+        expt - the experiment instance -- we need this because we need to pass it to cells when we instantiate them.
         meta_info - an optional dict of meta_info to be attached to electrodes, cells or pairs."""
         raise NotImplementedError('Must be implemented in subclass')
 
-    @property
-    def expt(self):
-        """Return the experiment object this loader loads data for."""
-        if self._expt is None:
-            raise Exception('No experiment set. During Experiment __init__, please call Loader.set_expt(expt)')
-        return self._expt
-
-    def set_expt(self, expt):
-        self._expt = expt
-
-    def get_site_info(self):
-        """Return a dictionary of meta_info about the site."""
+    def find_files(self):
+        """Return a dict of {'key': path} for important files in this experiment."""
         raise NotImplementedError('Must be implemented in subclass')
 
-    def get_slice_info(self):
-        """Return a dictionary of meta_info about the slice."""
+    def get_timestamp(self):
+        """Return a timestamp corresponding to the approximate start of data acquisition for this experiment."""
         raise NotImplementedError('Must be implemented in subclass')
 
-    def get_expt_info(self):
-        """Return a dictionary of meta_info about the experiment."""
+    def get_info(self, meta_info=None):
+        """Return a dict of meta_info about this experiment.
+        meta-info - an optional dict of meta_info that was passed to the Experiment upon initialization"""
         raise NotImplementedError('Must be implemented in subclass')
-        
+
+    def get_uid(self):
+        """Return a unique identification string for this experiment."""
+        raise NotImplementedError('Must be implemented in subclass')
+
+    def get_ephys_data(self):
+        """Return a Dataset object containing the ephys data collected with this experiment."""
+        raise NotImplementedError('Must be implemented in subclass')
+
+
+    
 
 
 
