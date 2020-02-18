@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from neuroanalysis.data.pair import Pair
-import os, re, json
+import os, re, json, datetime
 
 
 class Experiment(object):
@@ -94,6 +94,28 @@ class Experiment(object):
 
     def __repr__(self):
        return "<Experiment uid=%s>" % self.uid
+
+    @property
+    def last_modification_time(self):
+        """The timestamp of the most recently modified file in this experiment.
+        """
+        # files = [
+        #     self.path,
+        #     self.pipette_file,
+        #     self.nwb_file,
+        #     self.mosaic_file,
+        #     os.path.join(self.path, '.index'),
+        #     os.path.join(self.slice_path, '.index'),
+        #     os.path.join(self.expt_path, '.index'),
+        # ]
+        files = self.files.values()
+        mtime = 0
+        for file in files:
+            if file is None or not os.path.exists(file):
+                continue
+            mtime = max(mtime, os.stat(file).st_mtime)
+        
+        return datetime.datetime.fromtimestamp(mtime)
 
 
 

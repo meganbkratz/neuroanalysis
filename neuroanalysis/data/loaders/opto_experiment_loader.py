@@ -1,4 +1,4 @@
-import os, glob, re
+import os, glob, re, math
 import json
 from collections import OrderedDict
 from .loaders import ExperimentLoader
@@ -12,7 +12,7 @@ from pyqtgraph import configfile
 
 class AI_ExperimentLoader(ExperimentLoader):
 
-    def __init__(self, site_path=None, load_file=None):
+    def __init__(self, load_file=None, site_path=None):
         ExperimentLoader.__init__(self)
         if (load_file is not None) and (site_path is not None):
             raise Exception('Please specify either load_file OR site_path, not both.')
@@ -60,38 +60,42 @@ class AI_ExperimentLoader(ExperimentLoader):
 
     def get_site_info(self):
         if self.site_path is None:
-            return
+            return {}
         index = os.path.join(self.site_path, '.index')
         if not os.path.isfile(index):
-           return 
+           return  {}
         return configfile.readConfigFile(index)['.']
 
     def get_slice_info(self):
         if self.site_path is None:
-            return
+            return {}
         index = os.path.join(self.site_path, '..', '.index')
         if not os.path.isfile(index):
-           return 
+           return {}
         return configfile.readConfigFile(index)['.']
 
     def get_expt_info(self):
         if self.site_path is None:
-            return
+            return {}
         index = os.path.join(self.site_path, '../..', '.index')
         if not os.path.isfile(index):
-           return 
+           return {}
         return configfile.readConfigFile(index)['.']
 
     def get_multipatch_log(self):
+        if self.site_path is None:
+            return
         files = [p for p in os.listdir(self.site_path) if re.match(r'MultiPatch_\d+.log', p)]
         if len(files) == 0:
-            raise TypeError("Could not find multipatch log file for %s" % self)
+            raise TypeError("Could not find multipatch log file for %s" % self.site_path)
         if len(files) > 1:
-            raise TypeError("Found multiple multipatch log files for %s" % self)
+            raise TypeError("Found multiple multipatch log files for %s" % self.site_path)
         return os.path.join(self.site_path, files[0])
 
     def get_ephys_file(self):
         """Return the name of the nwb file for this experiment."""
+        if self.site_path is None:
+            return
         p = self.site_path
         files = glob.glob(os.path.join(p, '*.nwb'))
         if len(files) == 0:
@@ -118,10 +122,10 @@ class AI_ExperimentLoader(ExperimentLoader):
 
 class OptoExperimentLoader(AI_ExperimentLoader):
     
-    def __init__(self, cnx_file=None, site_path=None):
-        AI_ExperimentLoader.__init__(self, site_path=site_path, load_file=cnx_file)
+    def __init__(self, load_file=None, site_path=None):
+        AI_ExperimentLoader.__init__(self, load_file=load_file, site_path=site_path)
 
-        self.cnx_file = cnx_file
+        self.cnx_file = load_file
 
     def load(self, expt, meta_info=None):
         """Return a tuple of (electrodes, cells, pairs), where each element is an 

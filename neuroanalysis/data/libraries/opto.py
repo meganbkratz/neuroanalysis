@@ -11,7 +11,7 @@ from aisynphys import config
 #from neuroanalysis.miesnwb import MiesNwb
 from optoanalysis.data.dataset import OptoNwb
 from neuroanalysis.data.dataset import Dataset
-from neuroanalysis.data.loaders import MiesNwbLoader
+from neuroanalysis.data.loaders.mies_dataset_loader import MiesNwbLoader
 
 #def get_cells(expt):
 #    """Return a dictionary of {cell_id:Cell(), ...} for all cells in experiment."""
