@@ -42,3 +42,6 @@ class Pair(object):
     @property
     def distance(self):
         return self.preCell.distance(self.postCell)
+
+    def __repr__(self):
+        return "<Pair %s -> %s>" %(self.preCell.cell_id, self.postCell.cell_id)

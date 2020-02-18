@@ -92,6 +92,9 @@ class Experiment(object):
             self._uid = self.loader.get_uid()
         return self._uid
 
+    def __repr__(self):
+       return "<Experiment uid=%s>" % self.uid
+
 
 
 class OldExperiment(object):

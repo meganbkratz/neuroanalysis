@@ -30,3 +30,6 @@ class Electrode(object):
     @property
     def internal_solution(self):
         return self._internal_solution
+
+    def __repr__(self):
+        return "<Electrode %s>" % self.electrode_id
