@@ -42,6 +42,20 @@ class AI_ExperimentLoader(ExperimentLoader):
             info['site_info']=self.get_site_info()
         return info
 
+    def get_surface_depth(self):
+        try:
+            mplog = self.get_multipatch_log()
+        except TypeError:
+            return None
+        if mplog is None:
+            return None
+
+        lines = [l for l in open(mplog, 'r').readlines() if 'surface_depth_changed' in l]
+        if len(lines) == 0:
+            return None
+        line = lines[-1].rstrip(',\r\n')
+        return json.loads(line)['surface_depth']
+
     ### private:
 
     def get_site_info(self):

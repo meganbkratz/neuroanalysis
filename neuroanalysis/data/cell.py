@@ -165,7 +165,7 @@ class Cell(object):
     def depth(self):
         """Depth of cell from the cut surface of the slice.
         """
-        sd = self.expt.surface_depth
+        sd = self.expt.loader.get_surface_depth()
         p = self.position
         if None in (sd, p):
             return None

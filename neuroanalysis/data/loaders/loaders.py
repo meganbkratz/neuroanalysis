@@ -70,6 +70,10 @@ class ExperimentLoader():
         """Return a Dataset object containing the ephys data collected with this experiment."""
         raise NotImplementedError('Must be implemented in subclass')
 
+    def get_surface_depth(self):
+        """Return the depth of the surface of the slice, or None. Needed for Cells to calculate cell.depth"""
+        raise NotImplementedError('Must be implemented in subclass')
+
 
     
 
