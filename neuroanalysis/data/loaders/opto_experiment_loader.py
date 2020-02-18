@@ -1,8 +1,13 @@
+import os, glob, re
+import json
+from collections import OrderedDict
 from .loaders import ExperimentLoader
 from .mies_dataset_loader import MiesNwbLoader
 from neuroanalysis.data.cell import Cell
 from neuroanalysis.data.electrode import Electrode
 from neuroanalysis.data.dataset import Dataset
+from neuroanalysis.data.pair import Pair
+from pyqtgraph import configfile
 
 
 class AI_ExperimentLoader(ExperimentLoader):
@@ -11,16 +16,16 @@ class AI_ExperimentLoader(ExperimentLoader):
         ExperimentLoader.__init__(self)
         if (load_file is not None) and (site_path is not None):
             raise Exception('Please specify either load_file OR site_path, not both.')
-        elif (file_path is None) and (site_path is None):
+        elif (load_file is None) and (site_path is None):
             raise Exception('Please specify either a load_file or a site_path.')
 
         self.site_path = site_path
 
     def find_files(self):
         files = {
-            'path' = self.site_path
-            'ephys' = self.get_ephys_file(),
-            'multipatch_log' = self.get_multipatch_log()
+            'path': self.site_path,
+            'ephys': self.get_ephys_file(),
+            'multipatch_log': self.get_multipatch_log(),
         }
         return files
 
@@ -30,7 +35,7 @@ class AI_ExperimentLoader(ExperimentLoader):
             return info.get('__timestamp__')
             
     def get_info(self, meta_info=None):
-        info['meta_info'] = meta_info
+        info = {'additional_info':meta_info}
         if self.site_path is not None:
             info['day_info']=self.get_expt_info()
             info['slice_info']=self.get_slice_info()
@@ -58,7 +63,7 @@ class AI_ExperimentLoader(ExperimentLoader):
     def get_expt_info(self):
         if self.site_path is None:
             return
-        index = os.path.join(self.site_path,'../..' '.index')
+        index = os.path.join(self.site_path, '../..', '.index')
         if not os.path.isfile(index):
            return 
         return configfile.readConfigFile(index)['.']
@@ -69,7 +74,7 @@ class AI_ExperimentLoader(ExperimentLoader):
             raise TypeError("Could not find multipatch log file for %s" % self)
         if len(files) > 1:
             raise TypeError("Found multiple multipatch log files for %s" % self)
-        return os.path.join(self.path, files[0])
+        return os.path.join(self.site_path, files[0])
 
     def get_ephys_file(self):
         """Return the name of the nwb file for this experiment."""
@@ -140,7 +145,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
     def get_uid(self):
         if self.cnx_file is None:
             self.cnx_file = self.find_connections_file()
-        return os.path.split(self.cnx_file)[1][:-17] ### connections file name minus '_connections.json'
+        return os.path.split(self.cnx_file)[1].partition('_connections')[0] ### connections file name minus '_connections.json'
 
 #### private functions:
 
@@ -372,8 +377,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
                 i = mts.index(max(mts))
                 return cnx_file[i]
 
-    @classmethod
-    def get_cnx_file_version(cnx_file):
+    def get_cnx_file_version(self, cnx_file):
         with open(cnx_file, 'r') as f:
             exp_json = json.load(f)
         return exp_json.get('version', 0)

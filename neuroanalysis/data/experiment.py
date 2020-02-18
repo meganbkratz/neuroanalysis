@@ -69,7 +69,7 @@ class Experiment(object):
         There are no limits/requirements for what keys will be present in this dictionary.
         """
         if self._info is None:
-            self._info = self.loader.get_expt_info(meta_info=self._meta_info)
+            self._info = self.loader.get_info(meta_info=self._meta_info)
         return self._info
 
     @property
