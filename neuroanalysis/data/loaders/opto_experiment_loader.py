@@ -8,6 +8,7 @@ from neuroanalysis.data.electrode import Electrode
 from neuroanalysis.data.dataset import Dataset
 from neuroanalysis.data.pair import Pair
 from pyqtgraph import configfile
+from optoanalysis.analyzers import OptoBaselineAnalyzer
 
 
 class AI_ExperimentLoader(ExperimentLoader):
@@ -153,7 +154,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         nwb = files.get('ephys')
         if nwb is not None:
             #return OptoNwb(nwb)
-            return Dataset(loader=MiesNwbLoader(nwb))
+            return Dataset(loader=MiesNwbLoader(nwb, baseline_analyzer_class=OptoBaselineAnalyzer))
 
     def find_files(self):
         files = AI_ExperimentLoader.find_files(self)
@@ -399,4 +400,15 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         with open(cnx_file, 'r') as f:
             exp_json = json.load(f)
         return exp_json.get('version', 0)
+
+    def load_stimulation_log(self):
+        log_files = sorted(glob.glob(os.path.join(self.site_path, 'PhotoStimulationLog_*.log')))
+
+        log = {}
+        for log_file in log_files:
+            with open(log_file, 'r') as f:
+                for line in f.readlines():
+                    log.update(json.loads(line.rstrip(',\r\n')))
+
+        return log
                     
