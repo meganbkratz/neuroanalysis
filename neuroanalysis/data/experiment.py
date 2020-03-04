@@ -14,6 +14,7 @@ class Experiment(object):
         self._cells = None
         self._pairs = None
         self._files = None
+        self._slice = None
         self._data = None
         self._uid = None
         self._files = None
@@ -58,6 +59,12 @@ class Experiment(object):
         if self._data is None:
             self._data = self.loader.get_ephys_data(self.files)
         return self._data
+
+    @property
+    def slice(self):
+        if self._slice is None:
+            self._slice = self.loader.get_slice()
+        return self._slice
 
     def _load(self):
         """Populate electrodes, cells and pairs."""

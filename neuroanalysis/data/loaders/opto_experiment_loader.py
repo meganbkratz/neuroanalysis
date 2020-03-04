@@ -7,6 +7,7 @@ from neuroanalysis.data.cell import Cell
 from neuroanalysis.data.electrode import Electrode
 from neuroanalysis.data.dataset import Dataset
 from neuroanalysis.data.pair import Pair
+from neuroanalysis.data.slice import AI_Slice
 from pyqtgraph import configfile
 from optoanalysis.analyzers import OptoBaselineAnalyzer
 
@@ -56,6 +57,12 @@ class AI_ExperimentLoader(ExperimentLoader):
             return None
         line = lines[-1].rstrip(',\r\n')
         return json.loads(line)['surface_depth']
+
+    def get_slice(self):
+        if self.site_path is None:
+            return None
+        else:
+            return AI_Slice.get(os.path.split(self.site_path)[0])
 
     ### private:
 
