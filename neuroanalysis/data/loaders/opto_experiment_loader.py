@@ -168,7 +168,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         files['connections'] = self.cnx_file if self.cnx_file is not None else self.find_connections_file()
         return files
 
-    def get_uid(self):
+    def get_ext_id(self):
         if self.cnx_file is None:
             self.cnx_file = self.find_connections_file()
         return os.path.split(self.cnx_file)[1].partition('_connections')[0] ### connections file name minus '_connections.json'

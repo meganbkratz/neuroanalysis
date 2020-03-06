@@ -49,20 +49,20 @@ class ExperimentLoader():
         meta_info - an optional dict of meta_info to be attached to electrodes, cells or pairs."""
         raise NotImplementedError('Must be implemented in subclass')
 
-    def find_files(self):
-        """Return a dict of {'key': path} for important files in this experiment."""
-        raise NotImplementedError('Must be implemented in subclass')
+    # def find_files(self):
+    #     """Return a dict of {'key': path} for important files in this experiment."""
+    #     raise NotImplementedError('Must be implemented in subclass')
 
-    def get_timestamp(self):
-        """Return a timestamp corresponding to the approximate start of data acquisition for this experiment."""
-        raise NotImplementedError('Must be implemented in subclass')
+    # def get_timestamp(self):
+    #     """Return a timestamp corresponding to the approximate start of data acquisition for this experiment."""
+    #     raise NotImplementedError('Must be implemented in subclass')
 
     def get_info(self, meta_info=None):
         """Return a dict of meta_info about this experiment.
         meta-info - an optional dict of meta_info that was passed to the Experiment upon initialization"""
         raise NotImplementedError('Must be implemented in subclass')
 
-    def get_uid(self):
+    def get_ext_id(self):
         """Return a unique identification string for this experiment."""
         raise NotImplementedError('Must be implemented in subclass')
 
@@ -73,6 +73,29 @@ class ExperimentLoader():
     def get_surface_depth(self):
         """Return the depth of the surface of the slice, or None. Needed for Cells to calculate cell.depth"""
         raise NotImplementedError('Must be implemented in subclass')
+
+    def get_slice(self):
+        """Return a Slice object representing the slice used in this experiment."""
+        raise NotImplementedError('Must be implemented in subclass')
+
+    def get_datetime(self):
+        """Return a datetime object corresponding to the beginning of data acquisition for this experiment."""
+        raise NotImplementedError('Must be implemented in subclass')
+
+    def get_target_region(self):
+        """Return a string containing the name of the brain region targeted in this experiment."""
+        raise NotImplementedError('Must be implemented in subclass')
+
+    def get_target_temperature(self):
+        """Return the intended temperature of the experiment in C (as a float), or None."""
+        raise NotImplementedError('Must be implemented in subclass')
+
+    
+
+
+
+
+
 
 
     

@@ -4,6 +4,7 @@ import os, re, json, datetime
 
 
 class Experiment(object):
+    """A generic data model class for a slice electrophysiology experiment."""
 
     def __init__(self, loader=None, meta_info=None):
 
@@ -13,34 +14,41 @@ class Experiment(object):
         self._electrodes = None
         self._cells = None
         self._pairs = None
-        self._files = None
         self._slice = None
         self._data = None
-        self._uid = None
-        self._files = None
+        self._ext_id = None
+        #self._files = None
         self._info = None
-        self._timestamp = None
+        self._datetime = None
+        self._target_region = None
+        self._target_temperature = None
+        self._surface_depth = None
+        #self._timestamp = None
 
     @property
     def loader(self):
+        """Return the loader object for this experiment"""
         if self._loader is None:
             raise Exception("No loader was specified on initialization.")
         return self._loader
 
     @property
     def electrodes(self):
+        """A dictionary of {elecrode_id: Electrode(), ...} objects in this experiment."""
         if self._electrodes is None:
             self._load()
         return self._electrodes
 
     @property
     def cells(self):
+        """A dictionary of {cell_id: Cell(), ...} objects for all cells in this experiment."""
         if self._cells is None:
             self._load()
         return self._cells
 
     @property
     def pairs(self):
+        """A dictionary of {(pre_cell_id, post_cell_id): Pair(),...} pair objects in this experiment."""
         if self._pairs is None:
             self._load()
             # self._pairs = OrderedDict()
@@ -55,13 +63,14 @@ class Experiment(object):
 
     @property
     def data(self):
-        """Return a Dataset object for data in this experiment."""
+        """A Dataset object for data in this experiment."""
         if self._data is None:
-            self._data = self.loader.get_ephys_data(self.files)
+            self._data = self.loader.get_ephys_data()
         return self._data
 
     @property
     def slice(self):
+        """A Slice object for the slice this experiment was performed on."""
         if self._slice is None:
             self._slice = self.loader.get_slice()
         return self._slice
@@ -72,40 +81,91 @@ class Experiment(object):
 
     @property
     def info(self):
-        """Return a dictionary of meta_info associated with this experiment.
+        """A dictionary of meta_info associated with this experiment.
         There are no limits/requirements for what keys will be present in this dictionary.
         """
         if self._info is None:
             self._info = self.loader.get_info(meta_info=self._meta_info)
         return self._info
 
-    @property
-    def timestamp(self):
-        if self._timestamp is None:
-            self._timestamp = self._loader.get_timestamp()
-        return self._timestamp
+    # @property
+    # def timestamp(self):
+    #     if self._timestamp is None:
+    #         self._timestamp = self._loader.get_timestamp()
+    #     return self._timestamp
+
+    # @property
+    # def files(self):
+    #     """Return a dictionary of {name: path} for important files in this experiment."""
+    #     if self._files is None
+    #         self._files = self.loader.find_files()
+    #     return self._files
 
     @property
-    def files(self):
-        """Return a dictionary of {name: path} for important files in this experiment."""
-        if self._files is None:
-            self._files = self.loader.find_files()
-        return self._files
-
-    @property
-    def uid(self):
+    def ext_id(self):
         """A unique string that identifies this experiment."""
-        if self._uid is None:
-            self._uid = self.loader.get_uid()
-        return self._uid
+        if self._ext_id is None:
+            self._ext_id = self.loader.get_ext_id()
+        return self._ext_id
+
+    @property
+    def datetime(self):
+        """A datetime object marking the beginning of data acquisition for this experiment."""
+        if self._datetime is None:
+            self._datetime = self.loader.get_datetime()
+        return self._datetime
+
+    @property
+    def target_region(self):
+        """A string containing the name of the brain region targeted in this experiment."""
+        if self._target_region is None:
+            self._target_region = self.loader.get_target_region()
+        return self._target_region
+
+    @property
+    def target_temperature(self):
+        """The intended temperature of the experiment in C, or None.
+        """
+        if self._target_temperature is None:
+            self._target_temperature = self.loader.get_target_temperature()
+        return self._target_temperature
+
+    @property
+    def surface_depth(self):
+        """A reference measurement of the depth of the surface of the slice. 
+        This is used by Cell.depth to calculate the depth of a cell."""
+        if self._surface_depth is None:
+            self._surface_depth = self.loader.get_surface_depth()
+        return self._surface_depth
 
     def __repr__(self):
-       return "<Experiment uid=%s>" % self.uid
+       return "<%s id=%s>" % (self.__class__.__name__, self.ext_id)
+
+
+
+
+def AI_Experiment(Experiment):
+
+    """An experiment data model class with extra attributes that AllenInstitute experiments have. Loader
+    is expected to be an instance of AI_ExperimentLoader."""
+
+    def __init__(self, loader=None, meta_info=None):
+        Experiment.__init__(self, loader=loader, meta_info=meta_info)
+
+        self._site_info = None
+        self._expt_info = None
+        self._cluster_id = None
+        self._lims_drawing_tool_url = None
+        self._rig_operator = None
+        self._rig_name = None
+        self._project_name = None
 
     @property
     def last_modification_time(self):
-        """The timestamp of the most recently modified file in this experiment.
+        """The timestamp of the most recently modified file in this experiment,
+         or None if this experiment instance doesn't have access to files.
         """
+        return self.loader.get_last_modification_time() 
         # files = [
         #     self.path,
         #     self.pipette_file,
@@ -115,14 +175,78 @@ class Experiment(object):
         #     os.path.join(self.slice_path, '.index'),
         #     os.path.join(self.expt_path, '.index'),
         # ]
-        files = self.files.values()
-        mtime = 0
-        for file in files:
-            if file is None or not os.path.exists(file):
-                continue
-            mtime = max(mtime, os.stat(file).st_mtime)
+        # files = self.files.values()
+        # mtime = 0
+        # for file in files:
+        #     if file is None or not os.path.exists(file):
+        #         continue
+        #     mtime = max(mtime, os.stat(file).st_mtime)
         
-        return datetime.datetime.fromtimestamp(mtime)
+        # return datetime.datetime.fromtimestamp(mtime)
+
+    @property
+    def path(self):
+        """A string containing the full path to the site_directory of this experiment."""
+        return self.loader.site_path
+
+    @property
+    def site_info(self):
+        """A dictionary of meta_info contained in the .index file for this site."""
+        if self._site_info is None:
+            self._site_info = self.loader.get_site_info()
+        return self._site_info
+
+    @property
+    def expt_info(self):
+        """A dictionary of meta_info contained in the .index file for this expt (day)."""
+        if self._expt_info is None:
+            self._expt_info = self.loader.get_expt_info()
+        return self._site_info
+
+    @property
+    def cluster_id(self):
+        """LIMS CellCluster ID"""
+        if self._cluster_id is None:
+            self._cluster_id = self.loader.get_cluster_id()
+        return self._cluster_id
+
+    @property
+    def lims_drawing_tool_url(self):
+        """A string containing the url for the lims drawing tool for images in this experiment, or None"""
+        if self._lims_drawing_tool_url is None:
+            self._lims_drawing_tool_url = self.loader.get_lims_drawing_tool_url()
+        return self._lims_drawing_tool_url
+
+    @property
+    def rig_operator(self):
+        """A string containing the rig operator running this experiment."""
+        if self._rig_operator is None:
+            self._rig_operator = self.loader.get_rig_operator()
+        return self._rig_operator
+
+    @property
+    def rig_name(self):
+        """A string containing the name of the rig used to acquire this experiment.
+        """
+        if self._rig_name is None:
+            self._rig_name = self.loader.get_rig_name()
+            # self._rig_name = self.expt_info.get('rig_name', None)
+            # if self._rig_name is None:
+            #     path = self.original_path.lower()
+            #     m = re.search(r'\/(mp\d)', self.original_path)
+            #     if m is not None:
+            #        self._rig_name = m.groups()[0]
+        return self._rig_name
+
+    @property
+    def project_name(self):
+        """A string containing the name of the project to which this experiment belongs.
+        """
+        if self._project_name is None:
+            self._project_name = self.loader.get_project_name()
+
+
+
 
 
 
