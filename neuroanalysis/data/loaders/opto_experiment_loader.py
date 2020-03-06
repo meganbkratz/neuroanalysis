@@ -41,16 +41,16 @@ class OptoExperimentLoader(AI_ExperimentLoader):
 
         return (electrodes, cells, pairs)
 
-    def get_ephys_data(self, files):
-        nwb = files.get('ephys')
+    def get_ephys_data(self):
+        nwb = self.get_ephys_file()
         if nwb is not None:
             #return OptoNwb(nwb)
             return Dataset(loader=MiesNwbLoader(nwb, baseline_analyzer_class=OptoBaselineAnalyzer))
 
-    def find_files(self):
-        files = AI_ExperimentLoader.find_files(self)
-        files['connections'] = self.cnx_file if self.cnx_file is not None else self.find_connections_file()
-        return files
+    # def find_files(self):
+    #     files = AI_ExperimentLoader.find_files(self)
+    #     files['connections'] = self.cnx_file if self.cnx_file is not None else self.find_connections_file()
+    #     return files
 
     def get_ext_id(self):
         if self.cnx_file is None:
