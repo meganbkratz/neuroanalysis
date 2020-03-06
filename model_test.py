@@ -1,11 +1,14 @@
 import os
 import h5py
 from neuroanalysis.data.loaders.mies_dataset_loader import MiesNwbLoader
-from neuroanalysis.data.loaders.acq4_dataset_loader import Acq4DatasetLoader
+#from neuroanalysis.data.loaders.acq4_dataset_loader import Acq4DatasetLoader
 from neuroanalysis.data.dataset import Dataset
 from optoanalysis.analyzers import OptoBaselineAnalyzer
 from aisynphys.analyzers import MPBaselineAnalyzer
 import pyqtgraph as pg
+
+from neuroanalysis.data.experiment import Experiment
+from neuroanalysis.data.loaders.opto_experiment_loader import OptoExperimentLoader
 
 pg.dbg()
 
@@ -18,23 +21,7 @@ f3 = "/Users/meganbkratz/Documents/ManisLab/L4Mapping/ExcitationProfileData/2012
 
 mies_nwb = Dataset(loader=MiesNwbLoader(f2, baseline_analyzer_class=MPBaselineAnalyzer))
 opto_nwb = Dataset(loader=MiesNwbLoader(f, baseline_analyzer_class=OptoBaselineAnalyzer))
-acq4_dataset = Dataset(loader=Acq4DatasetLoader(f3))
+#acq4_dataset = Dataset(loader=Acq4DatasetLoader(f3))
 
-#old = OptoNwb(f)
-
-
-### for profiling lazy load stimulus vs stimulus
-# prof = pg.debug.Profiler(disabled=False)
-
-# for srec in mies_nwb.contents:
-#     recs = srec.recordings
-
-# prof('made recordings')
-
-# for srec in mies_nwb.contents:
-#     for rec in srec.recordings:
-#         desc = rec.stimulus.description
-
-# prof('got stimulus descriptions')
-# prof.finish()
+expt = Experiment(loader=OptoExperimentLoader(site_path=os.path.split(f)[0]))
 
