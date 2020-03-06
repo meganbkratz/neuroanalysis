@@ -144,7 +144,7 @@ class Experiment(object):
 
 
 
-def AI_Experiment(Experiment):
+class AI_Experiment(Experiment):
 
     """An experiment data model class with extra attributes that AllenInstitute experiments have. Loader
     is expected to be an instance of AI_ExperimentLoader."""

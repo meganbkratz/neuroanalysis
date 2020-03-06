@@ -13,9 +13,9 @@ class Slice():
     
     @classmethod
     def get(cls, path):
-        if path not in Slice._cache:
-            Slice._cache[path] = Slice(path)
-        return Slice._cache[path]
+        if path not in cls._cache:
+            cls._cache[path] = cls(path)
+        return cls._cache[path]
 
     @property
     def slice_info(self):
