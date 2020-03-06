@@ -98,6 +98,9 @@ class Slice():
         """A datetime object representing the time of dissection of this slice, or None."""
         raise NotImplementedError('Must be implemented in subclass.')
 
+    def __repr__(self):
+        return "<%s id:%s>" % (self.__class__.__name__, self.ext_id)
+
 
 
 class AI_Slice(Slice):
