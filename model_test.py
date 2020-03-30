@@ -10,9 +10,8 @@ from optoanalysis.analyzers import OptoBaselineAnalyzer
 from aisynphys.analyzers import MPBaselineAnalyzer
 from neuroanalysis.miesnwb import MiesNwb
 
-
 ## experiment testing
-from neuroanalysis.data.experiment import Experiment
+from neuroanalysis.data.experiment import AI_Experiment
 from neuroanalysis.data.loaders.opto_experiment_loader import OptoExperimentLoader
 
 
@@ -29,6 +28,6 @@ mies_nwb = Dataset(loader=MiesNwbLoader(f2, baseline_analyzer_class=MPBaselineAn
 opto_nwb = Dataset(loader=MiesNwbLoader(f, baseline_analyzer_class=OptoBaselineAnalyzer))
 #acq4_dataset = Dataset(loader=Acq4DatasetLoader(f3))
 
-expt = Experiment(loader=OptoExperimentLoader(site_path=os.path.split(f)[0]))
+expt = AI_Experiment(loader=OptoExperimentLoader(site_path=os.path.split(f)[0]))
 
 

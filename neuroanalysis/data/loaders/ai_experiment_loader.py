@@ -3,6 +3,7 @@ import json, yaml
 from .loaders import ExperimentLoader
 from neuroanalysis.data.slice import AI_Slice
 from pyqtgraph import configfile
+from aisynphys import lims
 
 class AI_ExperimentLoader(ExperimentLoader):
 
@@ -126,3 +127,64 @@ class AI_ExperimentLoader(ExperimentLoader):
         else:
             ephys_file = files[0]
         return ephys_file
+
+    def get_cluster_id(self):
+        """Return the lims cell_cluster id"""
+        cids = lims.expt_cluster_ids(self.get_specimen_name(), self.get_site_info()['__timestamp__'])
+        if len(cids) == 0:
+            return None
+        if len(cids) > 1:
+            raise Exception("Experiment %s has multiple LIMS clusters." % self.get_ext_id())
+        return cids[0]
+
+    def get_specimen_name(self):
+        self.get_slice().lims_specimen_name
+
+    def get_rig_operator(self):
+        return self.get_expt_info().get('rig_operator', None)
+
+    def get_rig_name(self):
+        """Return the name of the rig used to acquire this experiment.
+        """
+        rig_name = self.expt_info.get('rig_name', None)
+        if rig_name is None:
+            path = self.original_path.lower()
+            m = re.search(r'\/(mp\d)', self.original_path)
+            if m is not None:
+               rig_name = m.groups()[0]
+        return rig_name
+
+    def get_project_name(self):
+        """The name of the project to which this experiment belongs.
+        """
+        return self.get_slice_info().get('project', None)
+
+    @property
+    def original_path(self):
+        """The original path where this experiment was acquired. 
+        """
+        ss = os.path.join(self.site_path, 'sync_source')
+        if os.path.isfile(ss):
+            return open(ss, 'rb').read().decode('latin1')
+        else:
+            return self.site_path
+
+    @property
+    def relative_path(self):
+        """The path of this experiment relative to the data repository it lives in.
+        """
+        repo_path = os.path.abspath(os.path.join(self.site_path, '..', '..', '..'))
+        return os.path.relpath(self.site_path, repo_path)
+
+    @property
+    def server_path(self):
+        """The path of this experiment relative to the server storage directory.
+        """
+        try:
+            expt_dir = '%0.3f' % self.get_expt_info()['__timestamp__']
+        except KeyError:
+            raise Exception("Directory %s index is missing __timestamp__!" % self.expt_path)
+        subpath = self.site_path.split(os.path.sep)[-2:]
+        return os.path.join(expt_dir, *subpath)
+
+

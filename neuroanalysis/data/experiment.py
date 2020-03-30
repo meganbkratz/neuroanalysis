@@ -22,7 +22,7 @@ class Experiment(object):
         self._datetime = None
         self._target_region = None
         self._target_temperature = None
-        self._surface_depth = None
+        self._surface_depth = "empty" ## None is a valid value for surface depth to return and we don't want to repeatedly try to look it up if that is the case
         #self._timestamp = None
 
     @property
@@ -134,7 +134,7 @@ class Experiment(object):
     def surface_depth(self):
         """A reference measurement of the depth of the surface of the slice. 
         This is used by Cell.depth to calculate the depth of a cell."""
-        if self._surface_depth is None:
+        if self._surface_depth == 'empty': ## use a different designator because get_surface_depth can return None if it doesn't find a value -- and we don't want to repeatedly read the same file in that case
             self._surface_depth = self.loader.get_surface_depth()
         return self._surface_depth
 
@@ -210,12 +210,13 @@ class AI_Experiment(Experiment):
             self._cluster_id = self.loader.get_cluster_id()
         return self._cluster_id
 
-    @property
-    def lims_drawing_tool_url(self):
-        """A string containing the url for the lims drawing tool for images in this experiment, or None"""
-        if self._lims_drawing_tool_url is None:
-            self._lims_drawing_tool_url = self.loader.get_lims_drawing_tool_url()
-        return self._lims_drawing_tool_url
+    ### move to slice
+    # @property
+    # def lims_drawing_tool_url(self):
+    #     """A string containing the url for the lims drawing tool for images in this experiment, or None"""
+    #     if self._lims_drawing_tool_url is None:
+    #         self._lims_drawing_tool_url = self.loader.get_lims_drawing_tool_url()
+    #     return self._lims_drawing_tool_url
 
     @property
     def rig_operator(self):

@@ -57,6 +57,26 @@ class OptoExperimentLoader(AI_ExperimentLoader):
             self.cnx_file = self.find_connections_file()
         return os.path.split(self.cnx_file)[1].partition('_connections')[0] ### connections file name minus '_connections.json'
 
+    def get_surface_depth(self):
+        mp_files = sorted(glob.glob(os.path.join(self.site_path, 'MultiPatch_*.log')))
+
+        lines = []
+        for mplog in mp_files:
+            lines.extend([l for l in open(mplog, 'r').readlines() if 'surface_depth_changed' in l])
+        if len(lines) == 0:
+            return None
+        line = lines[-1].rstrip(',\r\n')
+        return json.loads(line)['surface_depth']
+
+    def get_last_modification_time(self):
+        files = [
+            self.site_path,
+            self.find_connections_file(),
+            self.get_mosaic_file()
+            ]
+                    
+
+
 #### private functions:
 
     def process_meta_info(self, electrodes, cells, meta_info):
