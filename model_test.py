@@ -1,14 +1,20 @@
 import os
 import h5py
+import pyqtgraph as pg
+
+## dataset testing
 from neuroanalysis.data.loaders.mies_dataset_loader import MiesNwbLoader
 #from neuroanalysis.data.loaders.acq4_dataset_loader import Acq4DatasetLoader
 from neuroanalysis.data.dataset import Dataset
 from optoanalysis.analyzers import OptoBaselineAnalyzer
 from aisynphys.analyzers import MPBaselineAnalyzer
-import pyqtgraph as pg
+from neuroanalysis.miesnwb import MiesNwb
 
+
+## experiment testing
 from neuroanalysis.data.experiment import Experiment
 from neuroanalysis.data.loaders.opto_experiment_loader import OptoExperimentLoader
+
 
 pg.dbg()
 
@@ -24,4 +30,5 @@ opto_nwb = Dataset(loader=MiesNwbLoader(f, baseline_analyzer_class=OptoBaselineA
 #acq4_dataset = Dataset(loader=Acq4DatasetLoader(f3))
 
 expt = Experiment(loader=OptoExperimentLoader(site_path=os.path.split(f)[0]))
+
 

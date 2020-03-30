@@ -90,18 +90,3 @@ class ExperimentLoader():
         """Return the intended temperature of the experiment in C (as a float), or None."""
         raise NotImplementedError('Must be implemented in subclass')
 
-    
-
-
-
-
-
-
-
-    
-
-
-
-
-
-

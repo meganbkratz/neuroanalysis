@@ -1,3 +1,4 @@
+from __future__ import print_function
 from collections import OrderedDict
 import numpy as np
 from neuroanalysis.synaptic_release import ReleaseModel
@@ -48,6 +49,6 @@ def test_release_model():
         for k in params:
             if abs(params[k] - expected_output[i][k]) > max(1e-12, abs(expected_output[i][k] / 1e3)):
                 test_pass = False
-                print "Parameter mismatch: %d %s\t%g\t%g\t%g" % (i, k, params[k], expected_output[i][k], params[k] - expected_output[i][k])
+                print("Parameter mismatch: %d %s\t%g\t%g\t%g" % (i, k, params[k], expected_output[i][k], params[k] - expected_output[i][k]))
 
     assert test_pass
