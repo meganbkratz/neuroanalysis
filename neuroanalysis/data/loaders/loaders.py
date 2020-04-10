@@ -49,6 +49,11 @@ class ExperimentLoader():
         meta_info - an optional dict of meta_info to be attached to electrodes, cells or pairs."""
         raise NotImplementedError('Must be implemented in subclass')
 
+    def verify(self):
+        """Perform some basic checks to ensure this experiment was acquired correctly.
+        Raise Exception if there is a problem."""
+        raise NotImplementedError('Must be implemented in subclass')
+
     # def find_files(self):
     #     """Return a dict of {'key': path} for important files in this experiment."""
     #     raise NotImplementedError('Must be implemented in subclass')

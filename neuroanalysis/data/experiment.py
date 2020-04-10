@@ -6,7 +6,7 @@ import os, re, json, datetime
 class Experiment(object):
     """A generic data model class for a slice electrophysiology experiment."""
 
-    def __init__(self, loader=None, meta_info=None):
+    def __init__(self, loader=None, meta_info=None, verify=False):
 
         self._loader = loader
         self._meta_info = meta_info
@@ -25,12 +25,19 @@ class Experiment(object):
         self._surface_depth = "empty" ## None is a valid value for surface depth to return and we don't want to repeatedly try to look it up if that is the case
         #self._timestamp = None
 
+        if verify:
+            self.verify()
+
     @property
     def loader(self):
         """Return the loader object for this experiment"""
         if self._loader is None:
             raise Exception("No loader was specified on initialization.")
         return self._loader
+
+    def verify(self):
+        """Have loader perform some basic checks to ensure this experiment was acquired correctly."""
+        self.loader.verify()
 
     @property
     def electrodes(self):
