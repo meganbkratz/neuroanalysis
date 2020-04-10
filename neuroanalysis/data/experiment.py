@@ -162,7 +162,7 @@ class AI_Experiment(Experiment):
         self._site_info = None
         self._expt_info = None
         self._cluster_id = None
-        self._lims_drawing_tool_url = None
+        #self._lims_drawing_tool_url = None
         self._rig_operator = None
         self._rig_name = None
         self._project_name = None
