@@ -208,7 +208,7 @@ class AI_Experiment(Experiment):
         """A dictionary of meta_info contained in the .index file for this expt (day)."""
         if self._expt_info is None:
             self._expt_info = self.loader.get_expt_info()
-        return self._site_info
+        return self._expt_info
 
     @property
     def cluster_id(self):
