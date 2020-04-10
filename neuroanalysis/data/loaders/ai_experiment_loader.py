@@ -155,7 +155,7 @@ class AI_ExperimentLoader(ExperimentLoader):
         return cids[0]
 
     def get_specimen_name(self):
-        self.get_slice().lims_specimen_name
+        return self._expt.slice.lims_specimen_name
 
     def get_rig_operator(self):
         return self.get_expt_info().get('rig_operator', None)
@@ -170,6 +170,16 @@ class AI_ExperimentLoader(ExperimentLoader):
         #     if m is not None:
         #        rig_name = m.groups()[0]
         return rig_name
+
+    def get_target_region(self):
+        if self._expt.slice.lims_record['organism'] == 'mouse':
+            # mouse: look up in acq4 metadata
+            rgn = self.get_expt_info().get('target_region', None)
+            corrected = {'V1': 'VisP'}.get(rgn, rgn)
+            return corrected
+        else:
+            # human: read from LIMS
+            return self._expt.slice.lims_record['structure']
 
     def get_project_name(self):
         """The name of the project to which this experiment belongs.

@@ -10,6 +10,7 @@ from neuroanalysis.data.pair import Pair
 from neuroanalysis.data.slice import AI_Slice
 from pyqtgraph import configfile
 from optoanalysis.analyzers import OptoBaselineAnalyzer
+from aisynphys.pipeline.opto import data_model
 
 
 class OptoExperimentLoader(AI_ExperimentLoader):
@@ -58,6 +59,9 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         return os.path.split(self.cnx_file)[1].partition('_connections')[0] ### connections file name minus '_connections.json'
 
     def get_surface_depth(self):
+        if self.site_path is None:
+            return None
+
         mp_files = sorted(glob.glob(os.path.join(self.site_path, 'MultiPatch_*.log')))
 
         lines = []
@@ -69,11 +73,43 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         return json.loads(line)['surface_depth']
 
     def get_last_modification_time(self):
-        files = [
-            self.site_path,
-            self.find_connections_file(),
-            self.get_mosaic_file()
-            ]
+        if self.site_path is not None:
+            files = [
+                self.site_path,
+                self.find_connections_file(),
+                self.get_mosaic_file(),
+                os.path.join(self.site_path, '.index'),
+                os.path.join(self.site_path, '..', '.index'),
+                os.path.join(self.site_path, '..', '..', '.index'),
+                ]
+        else:
+            files = [
+                self.find_connections_file()
+                ]
+
+        mtime = 0
+        for f in files:
+            if f is None or not os.path.exists(f):
+                continue
+            mtime = max(mtime, os.stat(f).st_mtime)
+        
+        return datetime.datetime.fromtimestamp(mtime)
+
+    def get_rig_name(self):
+        rig = AI_ExperimentLoader.get_rig_name(self)
+        if rig is None:
+            data = self.get_ephys_data()
+            if data is not None:
+                rig = data_model.get_rig_from_nwb(data)
+
+        return rig
+
+    def get_target_region(self):
+        #### Should we hardcode in a region, like V1?
+        if self._expt.slice is not None and self._expt.slice.lims_record is not None:
+            return AI_ExperimentLoader.get_target_region(self)
+        else:
+            return None
                     
 
 
@@ -282,6 +318,9 @@ class OptoExperimentLoader(AI_ExperimentLoader):
 
 
     def find_connections_file(self):
+        if self.cnx_file is not None:
+            return self.cnx_file
+
         cnx_files = sorted(glob.glob(os.path.join(self.site_path, '*connections*.json')))
         #print('cnx_files:', cnx_files, "path:", site_path)
         if len(cnx_files) == 1:

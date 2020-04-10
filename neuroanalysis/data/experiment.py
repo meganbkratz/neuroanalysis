@@ -8,6 +8,7 @@ class Experiment(object):
 
     def __init__(self, loader=None, meta_info=None, verify=False):
 
+        loader._expt = self ### loader needs a handle to experiment in order to access things like expt.slice from within it's functions
         self._loader = loader
         self._meta_info = meta_info
 
