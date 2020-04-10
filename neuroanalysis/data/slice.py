@@ -112,6 +112,7 @@ class AI_Slice(Slice):
         self._genotype = None
         self._lims_record = None
         self._slice_time = None
+        self._lims_specimen_name = None
         
     @property
     def slice_info(self):
@@ -128,7 +129,41 @@ class AI_Slice(Slice):
 
     @property
     def lims_specimen_name(self):
-        return self.slice_info['specimen_ID'].strip()
+        if self._lims_specimen_name is None:
+            name = self.slice_info.get('specimen_ID', None)
+            if name is not None:
+                self._lims_specimen_name = name.strip()
+            else:
+                ### often opto data saves an animal_id and a slice_number -- try to reconstruct name from these
+                slice_id = self.slice_info.get('slice_number', '').strip()
+                if len(slice_id) > 2:
+                    sid = slice_id
+                else:
+                    animal_id = self.parent_info.get('animal_id', '').strip()
+                    if len(animal_id) == 0:
+                        animal_id = self.parent_info.get('animal_ID', '').strip()
+                        if len(animal_id) == 0:
+                            return self._lims_specimen_name
+                    if len(slice_id) == 1:
+                        slice_id = '0'+slice_id
+                    sid = animal_id + '.' + slice_id
+
+                ids = lims.find_specimen_ids_matching_name(sid)
+                names = []
+
+                for i in ids:
+                    name = lims.specimen_name(i)
+                    m = re.match(r'(.*)(-(\d{6,7}))?(\.(\d{2}))(\.(\d{2}))$', name)
+                    if m is not None:
+                        names.append(name)
+
+                if len(set(names)) == 1:
+                    self._lims_specimen_name = names[0]
+                elif len(set(names)) > 1:
+                    raise Exception('Found more than one specimen name')
+        return self._lims_specimen_name
+
+
 
     @property
     def parent_info(self):
@@ -238,7 +273,8 @@ class AI_Slice(Slice):
         See aisynphys.lims.section_info()
         """
         if self._lims_record is None:
-            self._lims_record = lims.specimen_info(self.lims_specimen_name)
+            if self.lims_specimen_name is not None:
+                self._lims_record = lims.specimen_info(self.lims_specimen_name)
         return self._lims_record
 
     @property
