@@ -128,6 +128,23 @@ class AI_ExperimentLoader(ExperimentLoader):
             ephys_file = files[0]
         return ephys_file
 
+    def get_mosaic_file(self):
+        """Return the .mosaic file for this experiment."""
+        if self.site_path is None:
+            return None
+        sitefile = os.path.join(self.site_path, "site.mosaic")
+        if not os.path.isfile(sitefile):
+            sitefile = os.path.join(os.path.split(self.site_path)[0], "site.mosaic")
+        if not os.path.isfile(sitefile):
+            mosaicfiles = [f for f in os.listdir(self.site_path) if f.endswith('.mosaic')]
+            if len(mosaicfiles) == 1:
+                sitefile = os.path.join(self.site_path, mosaicfiles[0])
+        if not os.path.isfile(sitefile):
+            # print(os.listdir(self.path))
+            # print(os.listdir(os.path.split(self.path)[0]))
+            return None
+        return sitefile
+
     def get_cluster_id(self):
         """Return the lims cell_cluster id"""
         cids = lims.expt_cluster_ids(self.get_specimen_name(), self.get_site_info()['__timestamp__'])
@@ -146,12 +163,12 @@ class AI_ExperimentLoader(ExperimentLoader):
     def get_rig_name(self):
         """Return the name of the rig used to acquire this experiment.
         """
-        rig_name = self.expt_info.get('rig_name', None)
-        if rig_name is None:
-            path = self.original_path.lower()
-            m = re.search(r'\/(mp\d)', self.original_path)
-            if m is not None:
-               rig_name = m.groups()[0]
+        rig_name = self.get_expt_info().get('rig_name', None)
+        # if rig_name is None:
+        #     path = self.original_path.lower()
+        #     m = re.search(r'\/(mp\d)', self.original_path)
+        #     if m is not None:
+        #        rig_name = m.groups()[0]
         return rig_name
 
     def get_project_name(self):
