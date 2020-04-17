@@ -10,7 +10,7 @@ from neuroanalysis.data.pair import Pair
 from neuroanalysis.data.slice import AI_Slice
 from pyqtgraph import configfile
 from optoanalysis.analyzers import OptoBaselineAnalyzer
-from aisynphys.pipeline.opto import data_model
+from optoanalysis import data_model
 
 
 class OptoExperimentLoader(AI_ExperimentLoader):
