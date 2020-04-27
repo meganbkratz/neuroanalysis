@@ -18,7 +18,13 @@ class OptoExperimentLoader(AI_ExperimentLoader):
     def __init__(self, load_file=None, site_path=None):
         AI_ExperimentLoader.__init__(self, load_file=load_file, site_path=site_path)
 
-        self.cnx_file = load_file
+        self._cnx_file = load_file
+
+    @property
+    def cnx_file(self):
+        if self._cnx_file is None:
+            self._cnx_file = self.find_connections_file()
+        return self._cnx_file
 
     def load(self, expt, meta_info=None):
         """Return a tuple of (electrodes, cells, pairs), where each element is an 
@@ -76,7 +82,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         if self.site_path is not None:
             files = [
                 self.site_path,
-                self.find_connections_file(),
+                self.cnx_file,
                 self.get_mosaic_file(),
                 os.path.join(self.site_path, '.index'),
                 os.path.join(self.site_path, '..', '.index'),
@@ -84,7 +90,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
                 ]
         else:
             files = [
-                self.find_connections_file()
+                self.cnx_file
                 ]
 
         mtime = 0
@@ -318,8 +324,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
 
 
     def find_connections_file(self):
-        if self.cnx_file is not None:
-            return self.cnx_file
+
 
         cnx_files = sorted(glob.glob(os.path.join(self.site_path, '*connections*.json')))
         #print('cnx_files:', cnx_files, "path:", site_path)
