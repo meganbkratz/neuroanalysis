@@ -1,6 +1,7 @@
 import numpy as np
 from neuroanalysis.analyzers.analyzer import Analyzer
 from neuroanalysis.stimuli import find_square_pulses, find_noisy_square_pulses, SquarePulse
+from neuroanalysis.spike_detection import detect_evoked_spikes
 
 class GenericStimPulseAnalyzer(Analyzer):
     """For analyzing noise-free or noisy square-pulse stimulations."""
@@ -101,7 +102,7 @@ class PWMStimPulseAnalyzer(GenericStimPulseAnalyzer):
             trace = self.rec[channel]
 
             if trace.data[:10].std() > 0:
-                all_pulses = find_noisy_square_pulses(trace)
+                all_pulses = find_noisy_square_pulses(trace, std_threshold=10, min_amplitude=0.01)
             else:
                 all_pulses = find_square_pulses(trace)
 
