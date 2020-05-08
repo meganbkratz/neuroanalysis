@@ -121,6 +121,18 @@ class OptoExperimentLoader(AI_ExperimentLoader):
 
 #### private functions:
 
+    def get_electrodes_from_dataset(self):
+        """Return a list of electrode ids found in .nwb file or None if no .nwb file is available."""
+
+        dataset = self.get_ephys_data()
+        if dataset is None:
+            return
+
+        devs = list(dataset.devices)
+        return [x for x in devs if type(x) == type(1)]
+
+
+
     def process_meta_info(self, electrodes, cells, meta_info):
         """Process optional meta_info dict that is passed in at the initialization of expt.
         """
@@ -202,26 +214,29 @@ class OptoExperimentLoader(AI_ExperimentLoader):
 
 
         ##load electrode positions and connections
+        nwb_electrodes = self.get_electrodes_from_dataset()
+        if nwb_electrodes is not None:
+            names = ['electrode_%i'%dev_id for dev_id in nwb_electrodes]
+        else:
+            names = [key for key in exp_json['Headstages'].keys() if key.startswith('electrode')]
+
         electrodes = OrderedDict()
         cells = OrderedDict()
         HS_keys=[key for key in exp_json['Headstages'].keys() if key.startswith('electrode')]
-        for headstage in HS_keys:
-            data = exp_json['Headstages'][headstage]
+        for headstage in names:
+            data = exp_json['Headstages'].get(headstage)
             elec = Electrode(headstage, start_time=None, stop_time=None, device_id=headstage[-1])
             electrodes[headstage] = elec
             cell = Cell(expt, headstage, elec)
             elec.cell = cell
-            cell.position = (data['x_pos']*1e-6, data['y_pos']*1e-6, data['z_pos']*1e-6) #covert from um to m
-            cell.angle = data['angle']
             cell.has_readout = True
             cell.has_stimulation = True ## it's possible to interogate patched cell pairs, even if that's not employed often
             cells[cell.cell_id]=cell
-            #for p, conn in data['Connections'].items():
-            #    if conn is None: ## skip this one, it doesn't have a match in points and is a duplicate
-            #        continue
-            #    points[p][headstage] = conn
-            for p in points.keys():
-                points[p][headstage] = data['Connections'][p]
+            if data is not None:
+                cell.position = (data['x_pos']*1e-6, data['y_pos']*1e-6, data['z_pos']*1e-6) #covert from um to m
+                cell.angle = data['angle']
+                for p in points.keys():
+                    points[p][headstage] = data['Connections'][p]
 
 
 
@@ -237,7 +252,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
                 xyz_dif=math.sqrt(x_dif**2+y_dif**2+z_dif**2)
                 if xyz_dif < distance: 
                     same = True
-                    for hs in list(electrodes.keys()):
+                    for hs in list(HS_keys):
                         if points[p1][hs] != points[p2][hs]:
                             same=False
                     if same:
@@ -279,24 +294,33 @@ class OptoExperimentLoader(AI_ExperimentLoader):
                 cells[cell.cell_id] = cell
 
         ## create Cells for recorded cells
+        nwb_electrodes = self.get_electrodes_from_dataset()
+        if nwb_electrodes is not None:
+            names = ['electrode_%i'%dev_id for dev_id in nwb_electrodes]
+        else:
+            names = exp_json['Headstages'].keys()
+
         electrodes = OrderedDict()
-        for name, data in exp_json['Headstages'].items():
+        for name in names:
+            data = exp_json['Headstages'].get(name, None)
             elec = Electrode(name, start_time=None, stop_time=None, device_id=name[-1])
             electrodes[name] = elec
             cell = Cell(expt, name, elec)
             elec.cell = cell
-            cell.position = (data['x_pos'], data['y_pos'], data['z_pos'])
-            cell.angle = data['angle']
             cell.has_readout = True
             cell.has_stimulation = True
-            target_layer = data.get('target_layer')
-            if target_layer is not None:
-                target_layer = target_layer.strip().strip('L').strip('l')
-            cell._target_layer = target_layer
-            cell._percent_depth = data.get('percent_depth')
-            cell._distance_to_pia = data.get('distance_to_pia')
-            cell._distance_to_wm = data.get('distance_to_wm')
             cells[cell.cell_id] = cell
+            if data is not None:
+                cell.position = (data['x_pos'], data['y_pos'], data['z_pos'])
+                cell.angle = data['angle']
+                target_layer = data.get('target_layer')
+                if target_layer is not None:
+                    target_layer = target_layer.strip().strip('L').strip('l')
+                cell._target_layer = target_layer
+                cell._percent_depth = data.get('percent_depth')
+                cell._distance_to_pia = data.get('distance_to_pia')
+                cell._distance_to_wm = data.get('distance_to_wm')
+            
 
         pairs = self.create_pairs(cells, exp_json)
 
