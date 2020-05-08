@@ -133,6 +133,7 @@ class Dataset(Container):
         if meta is not None:
             self._meta.update(OrderedDict(meta))
 
+        self._devices = None
         #self._loader = loader
         #self._sequences = sequences
     
@@ -175,6 +176,16 @@ class Dataset(Container):
     @property
     def all_sync_recordings(self):
         return self.find(SyncRecording)
+
+    @property
+    def devices(self):
+        """Return a set of all the devices included in this dataset."""
+        if self._devices is None:
+            devs = []
+            for srec in self.contents:
+                devs.extend(srec.devices)
+            self._devices = set(devs)
+        return self._devices
 
     def meta_table(self, objs):
         # collect all metadata
