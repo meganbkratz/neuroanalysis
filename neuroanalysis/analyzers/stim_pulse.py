@@ -28,7 +28,7 @@ class GenericStimPulseAnalyzer(Analyzer):
 
         if self._pulses.get(channel) is None:
             trace = self.rec[channel]
-            if trace.data[:10].std() > 0:
+            if trace.data[:50].std() > 0:
                 pulses = find_noisy_square_pulses(trace, std_threshold=10)
             else:
                 pulses = find_square_pulses(trace)
