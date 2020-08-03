@@ -355,7 +355,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         if len(cnx_files) == 1:
             return cnx_files[0]
         elif len(cnx_files) == 0:
-            raise Exception("Could not find a connections file.")
+            raise Exception("Could not find a connections file in %s." % self.site_path)
         else:
             ### return the file with the highest version number. If there's still more than one return the file with the latest modification time
             max_version = 0
