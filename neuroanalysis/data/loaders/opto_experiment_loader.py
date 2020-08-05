@@ -116,6 +116,11 @@ class OptoExperimentLoader(AI_ExperimentLoader):
             return AI_ExperimentLoader.get_target_region(self)
         else:
             return None
+
+    def get_rig_operator(self):
+        op = AI_ExperimentLoader.get_rig_operator(self)
+        if op is None:
+            return self.get_ext_id().split('_')[-1]
                     
 
 
