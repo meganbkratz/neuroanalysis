@@ -873,7 +873,10 @@ class TSeries(Container):
         if rate is not None:
             return rate
         else:
-            return 1.0 / self.dt
+            rate = 1.0 / self.dt
+            if rate > 999: ## if sample rate is more than 1000 round to avoid floating point errors
+                rate = np.round(rate)
+            return rate
 
     @property
     def dt(self):
@@ -1259,13 +1262,15 @@ class TSeries(Container):
         
         return self.copy(data=data, time_values=tvals, dt=dt, sample_rate=sr)
 
-    def resample(self, sample_rate):
+    def resample(self, sample_rate, allow_upsample=False):
         """Return a resampled copy of this trace.
         
         Parameters
         ----------
         sample_rate : float
             The new sample rate of the returned TSeries
+        allow_upsample : bool | False
+            If True, allow data to be interpolated and resampled at a higher rate than self.sample_rate
 
         Notes
         -----
@@ -1280,6 +1285,9 @@ class TSeries(Container):
             return self
         if not self.regularly_sampled:
             raise TypeError("resample requires regularly-sampled data.")
+        if not allow_upsample and (sample_rate > self.sample_rate):
+            raise ValueError("Cannot resample at a higher rate unless allow_upsample=True. (current: %3d, requested:%3d)"%(self.sample_rate, sample_rate))
+
         
         ns = int(np.round(len(self) * sample_rate / self.sample_rate))
 
@@ -1290,7 +1298,7 @@ class TSeries(Container):
         # bessel filter gives reasonably good antialiasing with no ringing or edge
         # artifacts
         from ..filter import bessel_filter
-        filt = bessel_filter(self, cutoff=sample_rate, order=2)
+        filt = bessel_filter(self, cutoff=min(sample_rate, self.sample_rate-1e-9), order=2)
         t1 = self.time_values
         t2 = np.arange(t1[0], t1[-1], 1.0/sample_rate)
 

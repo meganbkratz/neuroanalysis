@@ -53,6 +53,7 @@ def test_trace_timing():
     assert tr.dt == dt
     assert np.allclose(tr.sample_rate, sr)
     check_trace(tr, data=a, time_values=t, has_timing=True, has_time_values=False, regularly_sampled=True)
+    check_resampling(tr, sr, dt, regularly_sampled=True)
 
     # trace with only sample_rate
     tr = TSeries(a, sample_rate=sr)
@@ -60,6 +61,7 @@ def test_trace_timing():
     assert tr.sample_rate == sr
     assert np.all(tr.time_values == t)
     check_trace(tr, data=a, time_values=t, has_timing=True, has_time_values=False, regularly_sampled=True)
+    check_resampling(tr, sr, dt, regularly_sampled=True)
     
     # trace with only regularly-sampled time_values
     tr = TSeries(a, time_values=t)
@@ -67,6 +69,7 @@ def test_trace_timing():
     assert np.allclose(tr.sample_rate, sr)
     assert np.all(tr.time_values == t)
     check_trace(tr, data=a, time_values=t, has_timing=True, has_time_values=True, regularly_sampled=True)
+    check_resampling(tr, sr, dt, regularly_sampled=True)
 
     # trace with irregularly-sampled time values
     t1 = np.cumsum(np.random.normal(loc=1, scale=0.02, size=a.shape))
@@ -74,6 +77,7 @@ def test_trace_timing():
     assert tr.dt == t1[1] - t1[0]
     assert np.all(tr.time_values == t1)
     check_trace(tr, data=a, time_values=t1, has_timing=True, has_time_values=True, regularly_sampled=False)
+    check_resampling(tr, sr, dt, regularly_sampled=False)
 
 
 def check_trace(tr, data, time_values, has_timing, has_time_values, regularly_sampled):
@@ -163,3 +167,16 @@ def check_timing(tr, data, time_values, has_timing, has_time_values, regularly_s
     assert np.all(tr.value_at(tr.time_at(indices)) == tr.data)
     assert np.all(tr.index_at(tr.time_at(indices)) == indices)
 
+def check_resampling(trace, sample_rate, dt, regularly_sampled=True):
+    if not regularly_sampled:
+        with raises(TypeError):
+            trace.resample(sample_rate/2)
+        return
+
+    assert trace.resample(sample_rate) is trace
+
+    with raises(ValueError):
+        trace.resample(sample_rate+10000)
+
+    assert np.isclose(trace.resample(sample_rate*2, allow_upsample=True).dt, dt/2)
+    assert np.isclose(trace.resample(sample_rate/4).dt, dt*4)
