@@ -32,6 +32,7 @@ class Cell(object):
         self._distance_to_wm = None
         self._is_excitatory = None
         self._cre_type = None
+        self.info = {} ## a dictionary of miscellaneous info about the cell
         self.has_readout = None ## should be set to True if we can have info about this cells postsynaptic activity, False if we don't
         self.has_stimulation = None ## should be set to True if we can have info about this cells presynaptic activity, False if we don't
                                     ## examples:
@@ -50,6 +51,7 @@ class Cell(object):
 
         # None means cell is not present in ephys data
         return None
+
 
     @property
     def cell_type(self):

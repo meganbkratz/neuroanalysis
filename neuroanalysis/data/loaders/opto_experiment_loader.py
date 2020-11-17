@@ -34,17 +34,18 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         meta_info - an optional dict of meta_info to be attached to electrodes, cells or pairs.
         """
 
-        if self.cnx_file is None:
-            self.cnx_file = self.find_connections_file()
-
-        version = self.get_cnx_file_version(self.cnx_file)
-
-        if version == 0:
-            electrodes, cells, pairs = self.load_markPoints_connection_file(expt)
+        if self.cnx_file == "not found":
+            electrodes, cells = self.load_without_connection_file(expt)
         else:
-            electrodes, cells, pairs = self.load_mosaiceditor_connection_file(expt)
+            version = self.get_cnx_file_version(self.cnx_file)
+            if version == 0:
+                electrodes, cells = self.load_markPoints_connection_file(expt)
+            else:
+                electrodes, cells = self.load_mosaiceditor_connection_file(expt)
 
         self.process_meta_info(electrodes, cells, meta_info)
+
+        pairs = self.create_pairs(cells)
 
         return (electrodes, cells, pairs)
 
@@ -143,7 +144,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         """
         ## Need to load: presynapticCre, presynapticEffector, [class, reporter, layer for each headstage], internal
         if meta_info is None:
-            return
+            print('Warning: Loading %s without meta info.' % self._expt)
 
         preEffector = meta_info.get('presynapticEffector', '').lower()
         for e_id, elec in electrodes.items():
@@ -172,6 +173,19 @@ class OptoExperimentLoader(AI_ExperimentLoader):
                         except ValueError:
                             if dist[0]['toWM'] != '':
                                 raise
+                    if dist[0]['photostim_as'] != '': ## this electrode targeted a photostimulated point, need to merge cells
+                        name = 'Point '+str(int(dist[0]['photostim_as']))
+                        ps_cell = cells.pop(name)
+                        old_name = cell.cell_id
+                        cell.cell_id = name+'/'+old_name
+                        cell.info.update(stim_point_ext_id=name, stim_point_info={
+                            'position':ps_cell.position, 
+                            'target_layer':ps_cell._target_layer, 
+                            'percent_depth':ps_cell._percent_depth,
+                            'distance_to_pia':ps_cell._distance_to_pia,
+                            'distance_to_wm':ps_cell._distance_to_wm})
+                        cells.pop(old_name)
+                        cells[cell.cell_id]=cell
                 elif len(dist) > 1:
                     raise Exception('Something is wrong.')
             if cell._percent_depth is None and cell._distance_to_pia is not None and cell._distance_to_wm is not None:
@@ -270,11 +284,10 @@ class OptoExperimentLoader(AI_ExperimentLoader):
                 cell.position = data['pos']
                 cell.has_readout = False
                 cell.has_stimulation = True
+                cell.info.update(stim_point_ext_id=point)
                 cells[cell.cell_id]=cell
 
-        pairs = self.create_pairs(cells, exp_json)
-
-        return (electrodes, cells, pairs)
+        return (electrodes, cells)
 
 
     def load_mosaiceditor_connection_file(self, expt):
@@ -289,6 +302,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
                 cell.position = tuple(data['position'])
                 cell.has_readout = False
                 cell.has_stimulation = True
+                cell.info.update(stim_point_ext_id=name)
                 target_layer = data.get('target_layer')
                 if target_layer is not None:
                     target_layer = target_layer.strip().strip('L').strip('l')
@@ -326,13 +340,40 @@ class OptoExperimentLoader(AI_ExperimentLoader):
                 cell._distance_to_pia = data.get('distance_to_pia')
                 cell._distance_to_wm = data.get('distance_to_wm')
             
+        return (electrodes, cells)
 
-        pairs = self.create_pairs(cells, exp_json)
+    def load_without_connection_file(self, expt):
+        cells = OrderedDict()
+        electrodes = OrderedDict()
 
-        return (electrodes, cells, pairs)
+        stim_log_points = self.get_points_from_photostim_log()
+        for name, data in stim_log_points.items():
+            if data['onCell']:
+                cell = Cell(expt, name, None)
+                cell.position = tuple(data['position'])
+                cell.has_readout = False
+                cell.has_stimulation = True
+                cell.info.update(stim_point_ext_id=name)
+                cells[cell.cell_id] = cell
+
+        nwb_electrodes = self.get_electrodes_from_dataset()
+        if nwb_electrodes is not None:
+            names = ['electrode_%i'%dev_id for dev_id in nwb_electrodes]
+        else:
+            raise Exception("Couldn't find electrodes in nwb, can't load without connection file.")
+        for name in names:
+            elec = Electrode(name, start_time=None, stop_time=None, device_id=name[-1])
+            electrodes[name] = elec
+            cell = Cell(expt, name, elec)
+            elec.cell = cell
+            cell.has_readout = True
+            cell.has_stimulation = True
+            cells[cell.cell_id] = cell
+
+        return (electrodes, cells)
 
 
-    def create_pairs(self, cells, exp_json):
+    def create_pairs(self, cells):
 
         pairs = OrderedDict()
         for preCell in cells.values():
@@ -343,12 +384,15 @@ class OptoExperimentLoader(AI_ExperimentLoader):
                     pair = Pair(preCell, postCell)
                     pairs[(preCell.cell_id, postCell.cell_id)] = pair
 
-        for p in pairs.values():
-            try:
-                p._connection_call = exp_json['Headstages'][p.postCell.cell_id]['Connections'][p.preCell.cell_id]
-                p._probed = True
-            except KeyError:
-                p._probed = False
+        if self.cnx_file != "not found":
+            with open(self.cnx_file, 'r') as f:
+                exp_json = json.load(f)
+            for p in pairs.values():
+                try:
+                    p._connection_call = exp_json['Headstages'][p.postCell.electrode.electrode_id]['Connections'][p.preCell.info.get('stim_point_ext_id')]
+                    p._probed = True
+                except KeyError:
+                    p._probed = False
         return pairs
 
 
@@ -360,7 +404,8 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         if len(cnx_files) == 1:
             return cnx_files[0]
         elif len(cnx_files) == 0:
-            raise Exception("Could not find a connections file in %s." % self.site_path)
+            #raise Exception("Could not find a connections file in %s." % self.site_path)
+            return "not found"
         else:
             ### return the file with the highest version number. If there's still more than one return the file with the latest modification time
             max_version = 0
@@ -395,4 +440,30 @@ class OptoExperimentLoader(AI_ExperimentLoader):
                     log.update(json.loads(line.rstrip(',\r\n')))
 
         return log
+
+    def get_points_from_photostim_log(self):
+        log = self.load_stimulation_log()
+        version = log.pop('version', -1)
+
+        points = {}
+
+        for stim in log.values():
+            if version >= 2:
+                pt_name = stim['stimulationPoint']['name']
+                pos = stim['stimPointPos']
+                onCell=stim['stimulationPoint']['onCell']
+            else:
+                pt_name = 'Point ' + str(stim['stimulationPoint'])
+                pos = stim['pos']
+                onCell=True ### just assume this is true, because we didn't start saving this info yet
+
+            points[pt_name] = {'name':pt_name, 'position':pos, 'onCell':onCell}
+
+        return points
+
+
+
+
+
+
                     
