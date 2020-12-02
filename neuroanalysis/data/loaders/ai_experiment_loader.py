@@ -39,8 +39,8 @@ class AI_ExperimentLoader(ExperimentLoader):
                     raise ValueError('Invalid temperature: "%s"' % self.expt_info.get('temperature'))
         return temp
             
-    def get_info(self, meta_info=None):
-        info = {'additional_info':meta_info}
+    def get_info(self):
+        info={}
         if self.site_path is not None:
             info['day_info']=self.get_expt_info()
             info['slice_info']=self.get_slice_info()

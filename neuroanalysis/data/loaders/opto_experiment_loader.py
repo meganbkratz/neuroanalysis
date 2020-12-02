@@ -15,10 +15,11 @@ from optoanalysis import data_model
 
 class OptoExperimentLoader(AI_ExperimentLoader):
     
-    def __init__(self, load_file=None, site_path=None):
+    def __init__(self, load_file=None, site_path=None, meta_info=None):
         AI_ExperimentLoader.__init__(self, load_file=load_file, site_path=site_path)
 
         self._cnx_file = load_file
+        self._meta_info = meta_info
 
     @property
     def cnx_file(self):
@@ -26,7 +27,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
             self._cnx_file = self.find_connections_file()
         return self._cnx_file
 
-    def load(self, expt, meta_info=None):
+    def load(self, expt):
         """Return a tuple of (electrodes, cells, pairs), where each element is an 
         OrderedDict of {electrode_id:Electrode}, {cell_id:Cell} or {pair_id:Pair}.
         Parameters
@@ -43,7 +44,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
             else:
                 electrodes, cells = self.load_mosaiceditor_connection_file(expt)
 
-        self.process_meta_info(electrodes, cells, meta_info)
+        self.process_meta_info(electrodes, cells, self._meta_info)
 
         pairs = self.create_pairs(cells)
 
@@ -61,9 +62,12 @@ class OptoExperimentLoader(AI_ExperimentLoader):
     #     return files
 
     def get_ext_id(self):
-        if self.cnx_file is None:
-            self.cnx_file = self.find_connections_file()
-        return os.path.split(self.cnx_file)[1].partition('_connections')[0] ### connections file name minus '_connections.json'
+        if self.cnx_file != 'not found':
+            return os.path.split(self.cnx_file)[1].partition('_connections')[0] ### connections file name minus '_connections.json'
+        elif self._meta_info is not None:
+            return self._meta_info['experiment'].partition('_connections')[0]
+        else:
+            raise Exception("Can't make name for experiment: (\n\tload_file:%s, \n\tsite_path:%s, \n\tmeta_info:%s)"%(self._cnx_file, self.site_path, self._meta_info))
 
     def get_surface_depth(self):
         if self.site_path is None:
@@ -122,6 +126,11 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         op = AI_ExperimentLoader.get_rig_operator(self)
         if op is None:
             return self.get_ext_id().split('_')[-1]
+
+    def get_info(self):
+        info = AI_ExperimentLoader.get_info(self)
+        info['additional_info'] = self._meta_info
+        return info
                     
 
 

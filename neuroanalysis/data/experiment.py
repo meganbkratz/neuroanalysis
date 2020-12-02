@@ -6,11 +6,10 @@ import os, re, json, datetime
 class Experiment(object):
     """A generic data model class for a slice electrophysiology experiment."""
 
-    def __init__(self, loader=None, meta_info=None, verify=False):
+    def __init__(self, loader=None, verify=False):
 
         loader._expt = self ### loader needs a handle to experiment in order to access things like expt.slice from within it's functions
         self._loader = loader
-        self._meta_info = meta_info
 
         self._electrodes = None
         self._cells = None
@@ -85,7 +84,7 @@ class Experiment(object):
 
     def _load(self):
         """Populate electrodes, cells and pairs."""
-        self._electrodes, self._cells, self._pairs = self.loader.load(self, meta_info=self._meta_info)
+        self._electrodes, self._cells, self._pairs = self.loader.load(self)
 
     @property
     def info(self):
@@ -93,7 +92,7 @@ class Experiment(object):
         There are no limits/requirements for what keys will be present in this dictionary.
         """
         if self._info is None:
-            self._info = self.loader.get_info(meta_info=self._meta_info)
+            self._info = self.loader.get_info()
         return self._info
 
     # @property
@@ -157,8 +156,8 @@ class AI_Experiment(Experiment):
     """An experiment data model class with extra attributes that AllenInstitute experiments have. Loader
     is expected to be an instance of AI_ExperimentLoader."""
 
-    def __init__(self, loader=None, meta_info=None):
-        Experiment.__init__(self, loader=loader, meta_info=meta_info)
+    def __init__(self, loader=None):
+        Experiment.__init__(self, loader=loader)
 
         self._site_info = None
         self._expt_info = None
