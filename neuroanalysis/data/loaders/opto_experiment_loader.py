@@ -369,7 +369,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         if nwb_electrodes is not None:
             names = ['electrode_%i'%dev_id for dev_id in nwb_electrodes]
         else:
-            raise Exception("Couldn't find electrodes in nwb, can't load without connection file.")
+            raise Exception("Couldn't find .nwb file in %s. .nwb is needed to load without a connections file.")
         for name in names:
             elec = Electrode(name, start_time=None, stop_time=None, device_id=name[-1])
             electrodes[name] = elec
@@ -406,17 +406,19 @@ class OptoExperimentLoader(AI_ExperimentLoader):
 
 
     def find_connections_file(self):
-
-
         cnx_files = sorted(glob.glob(os.path.join(self.site_path, '*connections*.json')))
         #print('cnx_files:', cnx_files, "path:", site_path)
         if len(cnx_files) == 1:
             return cnx_files[0]
         elif len(cnx_files) == 0:
             #raise Exception("Could not find a connections file in %s." % self.site_path)
-            return "not found"
+            name = os.path.join(self._meta_info['connections_dir'], self._meta_info['experiment'])
+            if os.path.exists(name):
+                return name
+            else:
+                return "not found"
         else:
-            ### return the file with the highest version number. If there's still more than one return the file with the latest modification time
+            ### return the file with the highest version number. If there's still more than one raise an exception
             max_version = 0
             cnx_file = []
             for f in cnx_files:
@@ -430,9 +432,7 @@ class OptoExperimentLoader(AI_ExperimentLoader):
             if len(cnx_file) == 1:
                 return cnx_file[0]
             else:
-                mts = map(os.path.getmtime, cnx_file)
-                i = mts.index(max(mts))
-                return cnx_file[i]
+                raise Exception("Found %i cnx files (version:%i) in %s. Not sure which one to use: %s" %(len(cnx_file), max_version, self.site_path, [os.path.split(f)[-1] for f in cnx_file]))
 
     def get_cnx_file_version(self, cnx_file):
         with open(cnx_file, 'r') as f:
