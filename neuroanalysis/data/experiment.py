@@ -156,8 +156,8 @@ class AI_Experiment(Experiment):
     """An experiment data model class with extra attributes that AllenInstitute experiments have. Loader
     is expected to be an instance of AI_ExperimentLoader."""
 
-    def __init__(self, loader=None):
-        Experiment.__init__(self, loader=loader)
+    def __init__(self, loader=None, verify=False):
+        Experiment.__init__(self, loader=loader, verify=verify)
 
         self._site_info = None
         self._expt_info = None

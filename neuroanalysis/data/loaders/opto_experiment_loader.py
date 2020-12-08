@@ -131,6 +131,21 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         info = AI_ExperimentLoader.get_info(self)
         info['additional_info'] = self._meta_info
         return info
+
+    def verify(self):
+        ## see if we have what we need to load
+        print('verifying')
+        if self.cnx_file == 'not found':
+            nwb = self.get_ephys_file()
+            if nwb is None:
+                raise Exception('Could not find connections file or .nwb file in %s.' % self.site_path)
+            stim_log = sorted(glob.glob(os.path.join(self.site_path, 'PhotoStimulationLog_*.log')))
+            if len(stim_log) == 0:
+                raise Exception('Could not find connections file or PhotoStimulationLog file in %s.' % self.site_path)
+
+
+
+
                     
 
 
