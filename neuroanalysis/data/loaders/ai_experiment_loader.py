@@ -123,7 +123,7 @@ class AI_ExperimentLoader(ExperimentLoader):
                         ephys_file = os.path.join(os.path.dirname(self.path), f['path'])
                         break
             if ephys_file is None:
-                raise Exception("Multiple NWB files found for %s" % self.expt)
+                raise Exception("Multiple NWB files found for %s" % self.get_ext_id())
         else:
             ephys_file = files[0]
         return ephys_file
