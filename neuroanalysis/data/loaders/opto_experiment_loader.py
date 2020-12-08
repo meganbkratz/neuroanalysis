@@ -134,7 +134,6 @@ class OptoExperimentLoader(AI_ExperimentLoader):
 
     def verify(self):
         ## see if we have what we need to load
-        print('verifying')
         if self.cnx_file == 'not found':
             nwb = self.get_ephys_file()
             if nwb is None:
