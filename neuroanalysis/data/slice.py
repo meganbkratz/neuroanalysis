@@ -160,7 +160,7 @@ class AI_Slice(Slice):
                 if len(set(names)) == 1:
                     self._lims_specimen_name = names[0]
                 elif len(set(names)) > 1:
-                    raise Exception('Found more than one specimen name')
+                    raise Exception('Found more than one specimen name (names: %s, ids: %s, sid:%s, path:%s)' % (set(names), ids, sid, self.path))
         return self._lims_specimen_name
 
 
