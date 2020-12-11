@@ -166,6 +166,7 @@ class AI_Experiment(Experiment):
         self._rig_operator = None
         self._rig_name = None
         self._project_name = None
+        self._mosaic_file = None
 
     @property
     def last_modification_time(self):
@@ -252,6 +253,14 @@ class AI_Experiment(Experiment):
         """
         if self._project_name is None:
             self._project_name = self.loader.get_project_name()
+        return self._project_name
+
+    @property
+    def mosaic_file(self):
+        if self._mosaic_file is None:
+            self._mosaic_file = self.loader.get_mosaic_file()
+        return self._mosaic_file
+
 
 
 

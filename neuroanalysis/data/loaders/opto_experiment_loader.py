@@ -132,6 +132,32 @@ class OptoExperimentLoader(AI_ExperimentLoader):
         info['additional_info'] = self._meta_info
         return info
 
+    def get_mosaic_file(self):
+        ### our mosaic files are usually in the slice folder and are named exp%i_site.mosaic
+        if self.site_path is None:
+            return
+
+        ## get our exp number
+        p = re.compile('exp\d')
+        m = p.search(self.get_ext_id())
+        if m is not None:
+            exp = m.group()
+
+        ## make a list of .mosaic files in site path and slice path
+        files = sorted(glob.glob(os.path.join(self.site_path, '*.mosaic')))
+        files.extend(sorted(glob.glob(os.path.join(os.path.split(self.site_path)[0], '*.mosaic'))))
+
+        p = re.compile(exp)
+        matches = [f for f in files if p.search(os.path.split(f)[-1]) is not None]
+
+        if len(matches) == 0:
+            return None
+        elif len(matches) == 1:
+            return matches[0]
+        else:
+            raise Exception('Not sure which .mosaic file to use for %s. Found:%s'%(self.get_ext_id(), matches))
+
+
     def verify(self):
         ## see if we have what we need to load
         if self.cnx_file == 'not found':
